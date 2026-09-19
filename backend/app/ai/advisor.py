@@ -101,6 +101,7 @@ def answer_question(
         "question": question,
         "answer": result["answer"],
         "mode": result["mode"],
+        "reason": result.get("reason"),
         "context_used": context,
         "notice": "AI explains deterministic outputs only.",
         "disclaimer": assessment.disclaimer,

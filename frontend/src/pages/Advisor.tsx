@@ -63,9 +63,13 @@ export default function Advisor() {
           AI explains deterministic outputs only. No numbers are invented.
         </p>
         <p className="mt-1 text-xs text-muted">
-          The model receives the computed figures as JSON and is instructed that
-          every number it cites must come from that payload. Expand the source
-          panel under any answer to check it.
+          Numbers come from the risk engine, never from a model. The explainer
+          is handed those computed figures as JSON and may only restate them.
+          Two paths render that JSON: Bedrock Claude Haiku when it is
+          reachable, and a deterministic template when it is not. Both quote
+          identical figures, and every answer is labelled with the path that
+          produced it. Expand the source panel under any answer to check it
+          against the payload.
         </p>
       </div>
 
@@ -187,17 +191,24 @@ function Answer({ response }: { response: AdvisorResponse }) {
 
   return (
     <div className="space-y-3">
-      <span
-        className={`inline-block rounded-md border px-2 py-0.5 text-[11px] ${
-          live
-            ? 'border-accent/40 bg-accent/10 text-accent'
-            : 'border-warn/40 bg-warn/10 text-warn'
-        }`}
-      >
-        {live
-          ? 'Answered by Bedrock Claude Haiku'
-          : 'Bedrock unreachable — templated from the same data'}
-      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-block rounded-md border px-2 py-0.5 text-[11px] ${
+            live
+              ? 'border-accent/40 bg-accent/10 text-accent'
+              : 'border-good/40 bg-good/10 text-good'
+          }`}
+        >
+          {live
+            ? 'Narrated by Bedrock Claude Haiku'
+            : 'Deterministic explainer'}
+        </span>
+        {!live ? (
+          <span className="text-[11px] text-muted">
+            Rendered from the computed assessment. Same figures, no model.
+          </span>
+        ) : null}
+      </div>
 
       <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper">
         {typed}

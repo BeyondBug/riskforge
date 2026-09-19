@@ -100,6 +100,8 @@ export interface AdvisorResponse {
   question: string
   answer: string
   mode: string
+  /** Coarse, non-leaking explanation of why the model path was unavailable. */
+  reason: string | null
   context_used: Record<string, unknown>
   notice: string
   disclaimer: string
