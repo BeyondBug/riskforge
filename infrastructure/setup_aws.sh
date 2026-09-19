@@ -17,7 +17,7 @@ PROFILE_NAME="riskforge-ec2-profile"
 # Cross-region inference profile and the foundation model it fronts.
 # The '*' in the model ARN is the REGION field only: the model itself stays
 # pinned, so this does not widen access to any other Bedrock model.
-BEDROCK_PROFILE_ID="${BEDROCK_PROFILE_ID:-ap.anthropic.claude-haiku-4-5-20251001-v1:0}"
+BEDROCK_PROFILE_ID="${BEDROCK_PROFILE_ID:-global.anthropic.claude-haiku-4-5-20251001-v1:0}"
 BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-anthropic.claude-haiku-4-5-20251001-v1:0}"
 
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"

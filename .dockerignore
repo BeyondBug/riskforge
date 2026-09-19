@@ -1,0 +1,15 @@
+# Root build context (used by the frontend image so it can read nginx/).
+.git
+.github
+backend
+docs
+scripts
+infrastructure
+frontend/node_modules
+frontend/dist
+**/__pycache__
+*.pem
+*.key
+.env
+.env.local
+README.md

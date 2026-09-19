@@ -1,26 +1,50 @@
-# Local development stack. Mirrors the production topology so that
-# `curl http://localhost/api/health` behaves the same on a laptop and on EC2.
+# Local development stack. Same topology as production so that
+# `curl http://localhost/api/health` behaves identically on a laptop and EC2.
+#
+# Requires a .env file in this directory:
+#   Copy-Item .env.example .env
+
+name: riskforge
+
 services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
+    image: riskforge-backend:local
     container_name: riskforge-backend
     env_file:
       - .env
     environment:
       APP_ENV: development
+    # Internal only: no host port. Nginx is the single entry point.
     expose:
       - "8000"
+    networks:
+      - riskforge
     restart: unless-stopped
 
-  web:
+  frontend:
     build:
-      context: ./frontend
+      # Root context so the image can bake in nginx/nginx.conf, keeping one
+      # copy of the Nginx config instead of a drifting duplicate.
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         VITE_API_BASE_URL: ""
-    container_name: riskforge-web
+    image: riskforge-frontend:local
+    container_name: riskforge-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    # Host 80 -> container 8080. Nginx runs as a non-root user, which cannot
+    # bind a privileged port inside the container.
     ports:
       - "80:8080"
+    networks:
+      - riskforge
     restart: unless-stopped
+
+networks:
+  riskforge:
+    driver: bridge

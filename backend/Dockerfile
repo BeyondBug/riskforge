@@ -1,4 +1,7 @@
-# RiskForge backend
+# RiskForge backend.
+#
+#   docker build -t riskforge-backend ./backend
+
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -7,10 +10,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# CBC is bundled with PuLP; no extra apt packages are required at runtime.
+# Requirements first: this layer is cached and only rebuilt when the pinned
+# dependency list actually changes, not on every source edit.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# CBC ships inside the PuLP wheel, so no apt packages are needed at runtime.
 COPY app ./app
 COPY sample_data ./sample_data
 
@@ -21,6 +26,7 @@ USER riskforge
 
 EXPOSE 8000
 
+# Compose gates the frontend on this healthcheck via depends_on.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=4).status==200 else 1)"
 

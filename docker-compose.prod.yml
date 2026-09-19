@@ -1,9 +1,17 @@
-# Production stack for EC2. Credentials come from the instance IAM role,
+# Production stack for EC2. AWS credentials come from the instance IAM role,
 # never from the image or a committed file.
+#
+#   cp .env.example .env
+#   docker-compose -f docker-compose.prod.yml up -d --build
+
+name: riskforge
+
 services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
+    image: riskforge-backend:prod
     container_name: riskforge-backend
     env_file:
       - .env
@@ -11,6 +19,8 @@ services:
       APP_ENV: production
     expose:
       - "8000"
+    networks:
+      - riskforge
     restart: always
     logging:
       driver: json-file
@@ -18,19 +28,28 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  web:
+  frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         VITE_API_BASE_URL: ""
-    container_name: riskforge-web
+    image: riskforge-frontend:prod
+    container_name: riskforge-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "80:8080"
+    networks:
+      - riskforge
     restart: always
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+networks:
+  riskforge:
+    driver: bridge
