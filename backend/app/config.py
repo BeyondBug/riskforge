@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     s3_report_url_expiry: int = 3600
 
     # --- Bedrock -----------------------------------------------------------
-    bedrock_model_id: str = "anthropic.claude-haiku-20240307-v1:0"
+    bedrock_model_id: str = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
     bedrock_max_tokens: int = 500
     bedrock_enabled: bool = True
 

@@ -1,14 +1,61 @@
-import { useState } from 'react'
-import { api, DISCLAIMER, type ReportReference } from '../api/client'
+import { useEffect, useState } from 'react'
+import { ErrorPanel, Spinner } from '../components/Severity'
+import {
+  api,
+  DISCLAIMER,
+  formatINR,
+  formatINRShort,
+  type Assessment,
+  type ReportReference,
+} from '../api/client'
+
+function DownloadIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5" />
+      <path d="M3.5 13.5V15a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1.5" />
+    </svg>
+  )
+}
 
 export default function Report() {
+  const [assessment, setAssessment] = useState<Assessment | null>(null)
   const [report, setReport] = useState<ReportReference | null>(null)
+  const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .assessment()
+      .then((a) => {
+        if (!cancelled) setAssessment(a)
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function generate() {
     setBusy(true)
     setError(null)
+    setReport(null)
     try {
       setReport(await api.generateReport())
     } catch (e) {
@@ -20,57 +67,78 @@ export default function Report() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-paper">Executive report</h1>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-paper">
+          Executive report
+        </h1>
         <p className="mt-1 text-sm text-muted">
-          A PDF covering the scored findings and, if the optimizer has run, the
+          A PDF covering the scored findings and, once the optimizer has run, the
           funding decision. Every figure in it comes from the same computation the
           dashboard shows.
         </p>
-      </div>
+      </header>
 
-      <button
-        type="button"
-        onClick={generate}
-        disabled={busy}
-        className="rounded-md bg-accent px-5 py-2 font-medium text-white disabled:opacity-50"
-      >
-        {busy ? 'Generating…' : 'Generate report'}
+      <section className="rf-card p-6">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-muted">
+          What this report will contain
+        </h2>
+        {loading ? (
+          <div className="mt-4">
+            <Spinner label="Loading assessment…" />
+          </div>
+        ) : assessment ? (
+          <dl className="tnum mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat
+              label="Modeled exposure"
+              value={formatINRShort(assessment.total_eal_inr)}
+              note={formatINR(assessment.total_eal_inr)}
+            />
+            <Stat label="Findings scored" value={String(assessment.findings_count)} />
+            <Stat label="Assets at risk" value={String(assessment.assets_at_risk)} />
+            <Stat label="Assessment" value={assessment.assessment_id} />
+          </dl>
+        ) : null}
+      </section>
+
+      <button type="button" onClick={generate} disabled={busy} className="rf-btn">
+        {busy ? 'Generating…' : 'Generate Executive Report'}
       </button>
 
-      {error ? (
-        <p className="rounded-lg border border-bad/40 bg-bad/10 p-4 text-sm text-bad">
-          {error}
-        </p>
-      ) : null}
+      {busy ? <Spinner label="Rendering the PDF…" /> : null}
+
+      {error ? <ErrorPanel title="Report generation failed" detail={error} /> : null}
 
       {report ? (
-        <section className="space-y-4 rounded-lg border border-edge bg-surface p-5">
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Row label="Assessment" value={report.assessment_id} />
-            <Row label="Size" value={`${(report.size_bytes / 1024).toFixed(1)} KB`} />
-            <Row
+        <section className="rounded-xl border border-good/40 bg-good/5 p-6 shadow-glow-good">
+          <p className="font-medium text-good">Report ready</p>
+          <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Size" value={`${(report.size_bytes / 1024).toFixed(1)} KB`} />
+            <Stat
               label="Stored in"
               value={report.storage === 's3' ? 'Amazon S3 (private)' : 'Local disk'}
             />
-            <Row
-              label="Budget allocation included"
+            <Stat
+              label="Budget plan included"
               value={report.includes_optimization ? 'Yes' : 'No — run the optimizer first'}
+            />
+            <Stat
+              label="Link validity"
+              value={
+                report.expires_in_seconds
+                  ? `${report.expires_in_seconds / 60} minutes`
+                  : 'No expiry (local file)'
+              }
             />
           </dl>
           <a
             href={report.download_url}
-            className="inline-block rounded-md border border-accent px-5 py-2 text-sm font-medium text-accent hover:bg-accent hover:text-white"
             target="_blank"
             rel="noreferrer"
+            className="mt-5 inline-flex items-center gap-2 rounded-lg border border-good px-5 py-2.5 text-sm font-semibold text-good transition-colors hover:bg-good hover:text-base"
           >
+            <DownloadIcon />
             Download PDF
           </a>
-          {report.expires_in_seconds ? (
-            <p className="text-xs text-muted">
-              Pre-signed link expires in {report.expires_in_seconds / 60} minutes.
-            </p>
-          ) : null}
         </section>
       ) : null}
 
@@ -79,11 +147,20 @@ export default function Report() {
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  note,
+}: {
+  label: string
+  value: string
+  note?: string
+}) {
   return (
     <div>
-      <dt className="text-muted">{label}</dt>
-      <dd className="text-paper">{value}</dd>
+      <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>
+      <dd className="mt-1 text-lg font-semibold text-paper">{value}</dd>
+      {note ? <p className="text-xs text-muted">{note}</p> : null}
     </div>
   )
 }

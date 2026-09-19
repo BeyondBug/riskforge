@@ -9,7 +9,7 @@ import { DISCLAIMER } from './api/client'
 
 export default function App() {
   return (
-    <div className="flex min-h-full flex-col bg-ink">
+    <div className="flex min-h-full flex-col bg-base">
       <Navbar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
         <Routes>
@@ -28,7 +28,7 @@ export default function App() {
           />
         </Routes>
       </main>
-      <footer className="border-t border-edge px-6 py-4 text-center text-xs text-muted">
+      <footer className="border-t border-edge bg-rail px-6 py-4 text-center text-xs text-muted">
         {DISCLAIMER} Synthetic Demo Dataset.
       </footer>
     </div>
