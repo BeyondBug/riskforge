@@ -37,3 +37,6 @@ Thumbs.db
 
 # Local AWS scratch files
 .aws-tmp/
+
+# Local AWS scratch files
+.aws-tmp/
