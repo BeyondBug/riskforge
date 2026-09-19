@@ -34,3 +34,6 @@ Thumbs.db
 *.pdf
 !docs/**/*.pdf
 *.tsbuildinfo
+
+# Local AWS scratch files
+.aws-tmp/
