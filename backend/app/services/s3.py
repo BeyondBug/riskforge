@@ -32,8 +32,13 @@ class S3Service:
     def _connect(self) -> None:
         try:
             import boto3
+            from botocore.config import Config
 
-            client = boto3.client("s3", region_name=self.settings.aws_region)
+            client = boto3.client(
+                "s3",
+                region_name=self.settings.aws_region,
+                config=Config(connect_timeout=1, read_timeout=2, retries={"max_attempts": 1}),
+            )
             client.head_bucket(Bucket=self.settings.s3_bucket_reports)
             self._client = client
             self.mode = "s3"

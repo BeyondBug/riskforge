@@ -210,6 +210,9 @@ function Answer({ response }: { response: AdvisorResponse }) {
         ) : null}
       </div>
 
+      <p className="text-xs text-muted">{response.notice}</p>
+      {!live && response.reason ? <p className="rounded-lg border border-edge bg-rail p-3 text-xs text-muted">Amazon Bedrock was unavailable, so this answer was rendered deterministically from the same computed context.</p> : null}
+
       <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper">
         {typed}
         {typed.length < response.answer.length ? (
@@ -219,12 +222,13 @@ function Answer({ response }: { response: AdvisorResponse }) {
 
       <details className="text-xs text-muted">
         <summary className="cursor-pointer hover:text-paper">
-          Show the exact data the model was given
+          Review the exact source data
         </summary>
         <pre className="mt-3 max-h-72 overflow-auto rounded-lg border border-edge bg-rail p-4 text-[11px] leading-relaxed">
           {JSON.stringify(response.context_used, null, 2)}
         </pre>
       </details>
+      <p className="text-[11px] text-muted">{response.disclaimer}</p>
     </div>
   )
 }

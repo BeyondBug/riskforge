@@ -95,6 +95,8 @@ def list_controls() -> dict:
 def optimize(request: OptimizationRequest) -> OptimizationResult:
     """Pick the control set that removes the most modeled EAL within budget."""
     assessment = store.ensure_assessment()
+    if request.assessment_id and request.assessment_id != assessment.assessment_id:
+        raise HTTPException(status_code=404, detail="Assessment not found")
     controls = store.controls_with_eal()
 
     try:
@@ -113,3 +115,11 @@ def optimize(request: OptimizationRequest) -> OptimizationResult:
     store.optimization = result
     store.persist_recommendations(result)
     return result
+
+
+@router.get("/optimizations/current", response_model=OptimizationResult)
+def current_optimization() -> OptimizationResult:
+    """Return the explicitly created plan used by advisor and report flows."""
+    if store.optimization is None:
+        raise HTTPException(status_code=404, detail="No optimization plan has been created")
+    return store.optimization

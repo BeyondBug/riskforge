@@ -118,6 +118,7 @@ image.
 | GET | `/api/assessments/current` | Latest assessment |
 | GET | `/api/controls` | Candidate controls with rupee reductions |
 | POST | `/api/optimize` | Budget allocation |
+| GET | `/api/optimizations/current` | Explicitly created plan used by advisor and report |
 | POST | `/api/advisor` | Ask the explanation model |
 | GET | `/api/advisor/context` | Exactly what the model was given |
 | POST | `/api/reports/generate` | Build the executive PDF |

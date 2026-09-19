@@ -36,7 +36,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-20 border-b border-edge bg-rail/95 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-3">
-        <div className="flex items-center gap-3">
+        <NavLink to="/" className="flex items-center gap-3" aria-label="RiskForge dashboard">
           <Mark />
           <div className="leading-tight">
             <p className="text-lg font-semibold tracking-tight text-paper">
@@ -44,7 +44,7 @@ export default function Navbar() {
             </p>
             <p className="text-[11px] text-muted">Synthetic Demo Dataset</p>
           </div>
-        </div>
+        </NavLink>
 
         <ul className="flex flex-wrap items-center gap-1">
           {links.map((link) => (
@@ -54,7 +54,7 @@ export default function Navbar() {
                 end={link.end}
                 className={({ isActive }) =>
                   [
-                    'block rounded-lg px-4 py-2 text-sm transition-colors',
+                    'block rounded-lg px-3 py-2 text-sm transition-colors sm:px-4',
                     isActive
                       ? 'bg-accent text-white'
                       : 'text-muted hover:bg-card hover:text-paper',

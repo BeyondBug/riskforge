@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ErrorPanel, Spinner } from '../components/Severity'
 import {
   api,
@@ -7,6 +8,8 @@ import {
   formatINRShort,
   type Assessment,
   type ReportReference,
+  type OptimizationResult,
+  ApiError,
 } from '../api/client'
 
 function DownloadIcon() {
@@ -30,16 +33,20 @@ function DownloadIcon() {
 export default function Report() {
   const [assessment, setAssessment] = useState<Assessment | null>(null)
   const [report, setReport] = useState<ReportReference | null>(null)
+  const [plan, setPlan] = useState<OptimizationResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    api
-      .assessment()
-      .then((a) => {
-        if (!cancelled) setAssessment(a)
+    Promise.allSettled([api.assessment(), api.currentOptimization()])
+      .then(([assessmentResult, planResult]) => {
+        if (cancelled) return
+        if (assessmentResult.status === 'fulfilled') setAssessment(assessmentResult.value)
+        else throw assessmentResult.reason
+        if (planResult.status === 'fulfilled') setPlan(planResult.value)
+        else if (!(planResult.reason instanceof ApiError && planResult.reason.status === 404)) throw planResult.reason
       })
       .catch((e: Error) => {
         if (!cancelled) setError(e.message)
@@ -100,7 +107,9 @@ export default function Report() {
         ) : null}
       </section>
 
-      <button type="button" onClick={generate} disabled={busy} className="rf-btn">
+      {plan ? <section className="rounded-xl border border-accent/40 bg-accent/10 p-5"><p className="font-medium text-paper">Funding plan ready</p><p className="mt-1 text-sm text-muted">This report will include the {formatINR(plan.budget_inr)} scenario with {plan.selected.length} funded controls.</p></section> : <section className="rounded-xl border border-warn/40 bg-warn/10 p-5"><p className="font-medium text-warn">No funding plan yet</p><p className="mt-1 text-sm text-muted">The report can be generated now, but it will contain the assessment only.</p><Link to="/optimizer" className="mt-3 inline-block text-sm font-semibold text-warn hover:underline">Build a funding plan first →</Link></section>}
+
+      <button type="button" onClick={generate} disabled={busy || loading} className="rf-btn">
         {busy ? 'Generating…' : 'Generate Executive Report'}
       </button>
 

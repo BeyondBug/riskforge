@@ -28,7 +28,12 @@ def dependencies() -> dict:
         "version": __version__,
         "region": settings.aws_region,
         "environment": settings.app_env,
-        "dynamodb": get_dynamodb_service().status,
-        "s3": get_s3_service().status,
-        "bedrock": get_bedrock_service().status,
+        # Public diagnostics deliberately expose modes, not internal exception
+        # strings which can contain hosts, account details, or credentials.
+        "dynamodb": {"mode": get_dynamodb_service().status["mode"]},
+        "s3": {"mode": get_s3_service().status["mode"]},
+        "bedrock": {
+            "mode": get_bedrock_service().status["mode"],
+            "last_invocation": get_bedrock_service().status["last_invocation"],
+        },
     }

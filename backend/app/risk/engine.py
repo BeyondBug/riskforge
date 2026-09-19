@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 
 from app.models.asset import Asset
 from app.models.finding import Finding
+from app.models.finding import FindingStatus
 from app.models.risk import (
     LikelihoodBreakdown,
     LossBreakdown,
@@ -149,6 +150,10 @@ def assess_portfolio(
 
     results: list[RiskResult] = []
     for finding in findings:
+        # Portfolio exposure represents actionable, unresolved risk. Retained
+        # findings remain in the source dataset but do not inflate this total.
+        if finding.status is not FindingStatus.OPEN:
+            continue
         asset = index.get(finding.asset_id)
         if asset is None:
             continue

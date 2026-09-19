@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ErrorPanel,
   SeverityBadge,
   Spinner,
   StatusBadge,
 } from '../components/Severity'
-import { api, formatINR, type FindingRow } from '../api/client'
+import { api, formatINR, type FindingRow, type RiskResult } from '../api/client'
 
 type SortKey =
   | 'asset_name'
@@ -30,6 +30,9 @@ const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
 
 export default function Findings() {
   const [rows, setRows] = useState<FindingRow[]>([])
+  const [details, setDetails] = useState<Record<string, RiskResult>>({})
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
   const [disclaimer, setDisclaimer] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,11 +42,11 @@ export default function Findings() {
 
   useEffect(() => {
     let cancelled = false
-    api
-      .findings()
-      .then((data) => {
+    Promise.all([api.findings(), api.assessment()])
+      .then(([data, assessment]) => {
         if (cancelled) return
         setRows(data.findings)
+        setDetails(Object.fromEntries(assessment.results.map((result) => [result.finding_id, result])))
         setDisclaimer(data.disclaimer)
       })
       .catch((e: Error) => {
@@ -58,7 +61,8 @@ export default function Findings() {
   }, [])
 
   const sorted = useMemo(() => {
-    const copy = [...rows]
+    const needle = query.trim().toLocaleLowerCase()
+    const copy = rows.filter((row) => !needle || [row.asset_name, row.title, row.cve_id].some((value) => value?.toLocaleLowerCase().includes(needle)))
     copy.sort((a, b) => {
       const av = a[sortKey]
       const bv = b[sortKey]
@@ -66,7 +70,7 @@ export default function Findings() {
       return String(av ?? '').localeCompare(String(bv ?? ''))
     })
     return descending ? copy.reverse() : copy
-  }, [rows, sortKey, descending])
+  }, [rows, query, sortKey, descending])
 
   function toggle(key: SortKey) {
     if (key === sortKey) {
@@ -86,6 +90,14 @@ export default function Findings() {
           finding's drivers, not entered by hand.
         </p>
       </header>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="flex-1 text-sm text-muted">
+          <span className="sr-only">Search findings</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by asset, title, or CVE…" className="w-full max-w-md rounded-lg border border-edge bg-card px-4 py-2.5 text-paper placeholder:text-muted" />
+        </label>
+        <span className="text-sm text-muted">{sorted.length} of {rows.length} findings</span>
+      </div>
 
       {error ? (
         <ErrorPanel title="Could not load findings" detail={error} />
@@ -127,7 +139,8 @@ export default function Findings() {
             </thead>
             <tbody>
               {sorted.map((row) => (
-                <tr key={row.finding_id} className="border-t border-edge bg-card">
+                <Fragment key={row.finding_id}>
+                <tr className="border-t border-edge bg-card">
                   <td className="px-4 py-3 text-sm">
                     <span className="font-medium text-paper">{row.asset_name}</span>
                     <span className="block text-xs text-muted">{row.title}</span>
@@ -153,9 +166,11 @@ export default function Findings() {
                     {row.days_open ?? '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={row.status} />
+                    <div className="flex items-center gap-3"><StatusBadge status={row.status} /><button type="button" aria-expanded={expanded === row.finding_id} onClick={() => setExpanded((value) => value === row.finding_id ? null : row.finding_id)} className="text-xs text-accent hover:underline">{expanded === row.finding_id ? 'Hide calculation' : 'Show calculation'}</button></div>
                   </td>
                 </tr>
+                {expanded === row.finding_id && details[row.finding_id] ? <tr key={`${row.finding_id}-detail`} className="border-t border-edge bg-base"><td colSpan={8} className="p-5"><CalculationBreakdown result={details[row.finding_id]} /></td></tr> : null}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -165,4 +180,18 @@ export default function Findings() {
       {disclaimer ? <p className="text-xs text-muted">{disclaimer}</p> : null}
     </div>
   )
+}
+
+const LIKELIHOOD_LABELS: Record<string, string> = {
+  norm_cvss: 'CVSS severity', exploitability: 'Exploit maturity', patch_age_score: 'Patch age', exposure_score: 'Network exposure', control_gap: 'Control gap', threat_intel_score: 'Threat intelligence',
+}
+
+function CalculationBreakdown({ result }: { result: RiskResult }) {
+  const losses = [
+    ['Downtime', result.loss.downtime_inr], ['Incident response', result.loss.incident_response_inr], ['Recovery', result.loss.recovery_inr], ['Data breach', result.loss.data_breach_inr], ['Regulatory', result.loss.regulatory_inr], ['Reputation', result.loss.reputation_inr],
+  ] as const
+  return <div className="grid gap-6 lg:grid-cols-2">
+    <section><h3 className="font-medium text-paper">Likelihood drivers</h3><p className="mt-1 text-xs text-muted">Weighted normalized inputs; this is a model score, not a guaranteed annual probability.</p><dl className="mt-4 space-y-2">{Object.entries(result.likelihood.weighted_terms).map(([key, contribution]) => <div key={key} className="grid grid-cols-[1fr_auto_auto] gap-4 text-sm"><dt className="text-muted">{LIKELIHOOD_LABELS[key] ?? key}</dt><dd className="tnum text-muted">input {result.likelihood[key as keyof typeof result.likelihood] as number}</dd><dd className="tnum text-paper">+{contribution.toFixed(3)}</dd></div>)}</dl><p className="tnum mt-4 border-t border-edge pt-3 text-sm text-paper">Likelihood score <strong>{result.likelihood.likelihood.toFixed(3)}</strong></p></section>
+    <section><h3 className="font-medium text-paper">Loss magnitude</h3><p className="mt-1 text-xs text-muted">Six modeled components derived from supplied asset inputs.</p><dl className="mt-4 space-y-2">{losses.map(([label, value]) => <div key={label} className="flex justify-between gap-4 text-sm"><dt className="text-muted">{label}</dt><dd className="tnum text-paper">{formatINR(value)}</dd></div>)}</dl><p className="tnum mt-4 border-t border-edge pt-3 text-sm text-paper">{result.likelihood.likelihood.toFixed(3)} × {formatINR(result.loss.loss_magnitude_inr)} = <strong className="text-bad">{formatINR(result.eal_inr)} EAL</strong></p></section>
+  </div>
 }
