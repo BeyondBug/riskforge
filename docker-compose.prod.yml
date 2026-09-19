@@ -1,0 +1,36 @@
+# Production stack for EC2. Credentials come from the instance IAM role,
+# never from the image or a committed file.
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: riskforge-backend
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+    expose:
+      - "8000"
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+    container_name: riskforge-web
+    depends_on:
+      - backend
+    ports:
+      - "80:8080"
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

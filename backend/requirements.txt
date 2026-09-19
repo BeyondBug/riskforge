@@ -1,0 +1,19 @@
+# Pinned to the versions resolved and test-verified for RiskForge.
+# Python 3.11+
+
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+
+boto3==1.43.98
+botocore==1.43.98
+
+PuLP==3.3.2
+reportlab==4.4.10
+
+python-multipart==0.0.32
+httpx==0.28.1
+
+# Test-only, kept here so the Docker image can run the suite in CI.
+pytest==9.1.1

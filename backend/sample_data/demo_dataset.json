@@ -1,0 +1,237 @@
+{
+  "dataset_label": "Synthetic Demo Dataset",
+  "provenance": "Hand-authored planning inputs for the RiskForge hackathon demo. Asset values, revenue rates, record counts and cost-per-record figures are illustrative and have NOT been sourced from a real organisation or a published breach-cost study. CVE identifiers are real; the severity scores shipped here are demo values and should be re-verified against NVD before any real use. records_exposed is a scenario expectation, not a population count; it is bounded so that modeled loss magnitude stays below the asset's business value.",
+  "disclaimer": "Modeled estimates based on supplied inputs. Not a guarantee of actual losses.",
+  "currency": "INR",
+  "assets": [
+    {
+      "asset_id": "AST-001",
+      "name": "Payment Gateway",
+      "category": "BFSI",
+      "criticality": 10,
+      "business_value_inr": 500000000,
+      "owner": "payments-platform",
+      "loss_drivers": {
+        "revenue_per_hour_inr": 1200000,
+        "downtime_hours": 8,
+        "ir_day_rate_inr": 150000,
+        "ir_days": 10,
+        "rebuild_cost_inr": 2500000,
+        "data_restoration_cost_inr": 1000000,
+        "records_exposed": 12000,
+        "cost_per_record_inr": 1500,
+        "regulatory_rate_per_record_inr": 100,
+        "regulatory_cap_inr": 50000000,
+        "reputation_factor": 0.015,
+        "records_note": "Expected records exposed in the modeled incident scenario, not the total customer base."
+      }
+    },
+    {
+      "asset_id": "AST-002",
+      "name": "Customer Database",
+      "category": "BFSI",
+      "criticality": 9,
+      "business_value_inr": 300000000,
+      "owner": "data-platform",
+      "loss_drivers": {
+        "revenue_per_hour_inr": 400000,
+        "downtime_hours": 6,
+        "ir_day_rate_inr": 150000,
+        "ir_days": 8,
+        "rebuild_cost_inr": 1500000,
+        "data_restoration_cost_inr": 800000,
+        "records_exposed": 25000,
+        "cost_per_record_inr": 1500,
+        "regulatory_rate_per_record_inr": 100,
+        "regulatory_cap_inr": 50000000,
+        "reputation_factor": 0.015,
+        "records_note": "Expected records exposed in the modeled incident scenario, not the total customer base."
+      }
+    },
+    {
+      "asset_id": "AST-003",
+      "name": "Authentication API",
+      "category": "BFSI",
+      "criticality": 8,
+      "business_value_inr": 200000000,
+      "owner": "identity",
+      "loss_drivers": {
+        "revenue_per_hour_inr": 300000,
+        "downtime_hours": 4,
+        "ir_day_rate_inr": 150000,
+        "ir_days": 6,
+        "rebuild_cost_inr": 800000,
+        "data_restoration_cost_inr": 400000,
+        "records_exposed": 8000,
+        "cost_per_record_inr": 1200,
+        "regulatory_rate_per_record_inr": 100,
+        "regulatory_cap_inr": 50000000,
+        "reputation_factor": 0.01,
+        "records_note": "Expected records exposed in the modeled incident scenario, not the total customer base."
+      }
+    },
+    {
+      "asset_id": "AST-004",
+      "name": "HR Portal",
+      "category": "Internal",
+      "criticality": 4,
+      "business_value_inr": 20000000,
+      "owner": "people-ops",
+      "loss_drivers": {
+        "revenue_per_hour_inr": 20000,
+        "downtime_hours": 6,
+        "ir_day_rate_inr": 100000,
+        "ir_days": 4,
+        "rebuild_cost_inr": 300000,
+        "data_restoration_cost_inr": 150000,
+        "records_exposed": 1500,
+        "cost_per_record_inr": 1200,
+        "regulatory_rate_per_record_inr": 100,
+        "regulatory_cap_inr": 50000000,
+        "reputation_factor": 0.01,
+        "records_note": "Expected records exposed in the modeled incident scenario, not the total customer base."
+      }
+    },
+    {
+      "asset_id": "AST-005",
+      "name": "Public Website",
+      "category": "Public",
+      "criticality": 5,
+      "business_value_inr": 50000000,
+      "owner": "marketing-web",
+      "loss_drivers": {
+        "revenue_per_hour_inr": 50000,
+        "downtime_hours": 4,
+        "ir_day_rate_inr": 100000,
+        "ir_days": 3,
+        "rebuild_cost_inr": 200000,
+        "data_restoration_cost_inr": 100000,
+        "records_exposed": 0,
+        "cost_per_record_inr": 0,
+        "regulatory_rate_per_record_inr": 0,
+        "regulatory_cap_inr": 0,
+        "reputation_factor": 0.01,
+        "records_note": "Expected records exposed in the modeled incident scenario, not the total customer base."
+      }
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "FND-001",
+      "asset_id": "AST-001",
+      "title": "Backdoored xz-utils dependency in build image",
+      "cve_id": "CVE-2024-3094",
+      "severity_score": 10.0,
+      "score_source": "synthetic_demo",
+      "exploit_maturity": "weaponized",
+      "days_open": 45,
+      "exposure": "internet",
+      "control_effectiveness": 0.0,
+      "threat_intel": "exploited_in_wild",
+      "status": "open"
+    },
+    {
+      "finding_id": "FND-002",
+      "asset_id": "AST-002",
+      "title": "Unauthenticated out-of-bounds write in SSL-VPN edge appliance",
+      "cve_id": "CVE-2024-21762",
+      "severity_score": 9.8,
+      "score_source": "synthetic_demo",
+      "exploit_maturity": "weaponized",
+      "days_open": 30,
+      "exposure": "internet",
+      "control_effectiveness": 0.4,
+      "threat_intel": "exploited_in_wild",
+      "status": "open"
+    },
+    {
+      "finding_id": "FND-003",
+      "asset_id": "AST-003",
+      "title": "MFA not enforced on customer authentication API",
+      "cve_id": null,
+      "severity_score": 8.1,
+      "score_source": "analyst_assigned_synthetic_demo",
+      "exploit_maturity": "functional",
+      "days_open": 120,
+      "exposure": "internet",
+      "control_effectiveness": 0.2,
+      "threat_intel": "exploited_in_wild",
+      "status": "open"
+    },
+    {
+      "finding_id": "FND-004",
+      "asset_id": "AST-004",
+      "title": "SQL injection in employee search parameter",
+      "cve_id": null,
+      "severity_score": 7.5,
+      "score_source": "analyst_assigned_synthetic_demo",
+      "exploit_maturity": "functional",
+      "days_open": 60,
+      "exposure": "internal",
+      "control_effectiveness": 0.0,
+      "threat_intel": "poc_public",
+      "status": "open"
+    },
+    {
+      "finding_id": "FND-005",
+      "asset_id": "AST-005",
+      "title": "Deprecated TLS 1.0/1.1 accepted on public endpoint",
+      "cve_id": null,
+      "severity_score": 5.3,
+      "score_source": "analyst_assigned_synthetic_demo",
+      "exploit_maturity": "poc",
+      "days_open": 200,
+      "exposure": "internet",
+      "control_effectiveness": 0.3,
+      "threat_intel": "chatter",
+      "status": "open"
+    }
+  ],
+  "controls": [
+    {
+      "control_id": "CTL-001",
+      "finding_id": "FND-001",
+      "asset_id": "AST-001",
+      "name": "Patch CVE-2024-3094",
+      "description": "Rebuild base images on a clean xz-utils release, rotate build secrets, re-sign artifacts.",
+      "cost_inr": 80000,
+      "eal_reduction_pct": 0.7
+    },
+    {
+      "control_id": "CTL-002",
+      "finding_id": "FND-003",
+      "asset_id": "AST-003",
+      "name": "Enable MFA",
+      "description": "Enforce TOTP/WebAuthn on all customer and admin logins to the authentication API.",
+      "cost_inr": 45000,
+      "eal_reduction_pct": 0.65
+    },
+    {
+      "control_id": "CTL-003",
+      "finding_id": "FND-002",
+      "asset_id": "AST-002",
+      "name": "Patch CVE-2024-21762",
+      "description": "Apply vendor fix to the SSL-VPN appliance and audit for pre-patch compromise.",
+      "cost_inr": 60000,
+      "eal_reduction_pct": 0.6
+    },
+    {
+      "control_id": "CTL-004",
+      "finding_id": "FND-004",
+      "asset_id": "AST-004",
+      "name": "Fix SQLi",
+      "description": "Parameterize the employee search query and add a WAF rule as a compensating control.",
+      "cost_inr": 120000,
+      "eal_reduction_pct": 0.8
+    },
+    {
+      "control_id": "CTL-005",
+      "finding_id": "FND-005",
+      "asset_id": "AST-005",
+      "name": "Upgrade TLS",
+      "description": "Disable TLS 1.0/1.1, enforce TLS 1.2+ with a modern cipher suite on the edge.",
+      "cost_inr": 30000,
+      "eal_reduction_pct": 0.4
+    }
+  ]
+}
