@@ -46,6 +46,7 @@ export interface Assessment {
   assessment_id: string
   created_at: string
   dataset_label: string
+  model_version: string
   results: RiskResult[]
   total_eal_inr: number
   assets_at_risk: number
@@ -118,11 +119,40 @@ export interface ReportReference {
   includes_optimization: boolean
 }
 
+export interface DependencyStatus {
+  status: string
+  version: string
+  region: string
+  environment: string
+  dynamodb: { mode: string }
+  s3: { mode: string }
+  bedrock: { mode: string; last_invocation: string | null }
+}
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message)
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  })
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 20_000)
+  let response: Response
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...init,
+      signal: init?.signal ?? controller.signal,
+    })
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      throw new ApiError('The request timed out. Please try again.', 408)
+    }
+    throw new ApiError('The API could not be reached. Please try again.', 0)
+  } finally {
+    window.clearTimeout(timeout)
+  }
   if (!response.ok) {
     let detail = `Request failed with status ${response.status}`
     try {
@@ -131,25 +161,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       /* response had no JSON body; keep the status message */
     }
-    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+    throw new ApiError(typeof detail === 'string' ? detail : JSON.stringify(detail), response.status)
   }
   return (await response.json()) as T
 }
 
 export const api = {
   health: () => request<{ status: string }>('/api/health'),
-  deps: () => request<Record<string, unknown>>('/api/health/deps'),
+  deps: () => request<DependencyStatus>('/api/health/deps'),
   assessment: () => request<Assessment>('/api/assessments/current'),
   recompute: () => request<Assessment>('/api/assessments', { method: 'POST' }),
   findings: () =>
     request<{ count: number; findings: FindingRow[]; disclaimer: string }>(
       '/api/findings',
     ),
-  optimize: (budget_inr: number) =>
+  optimize: (budget_inr: number, assessment_id?: string) =>
     request<OptimizationResult>('/api/optimize', {
       method: 'POST',
-      body: JSON.stringify({ budget_inr }),
+      body: JSON.stringify({ budget_inr, assessment_id }),
     }),
+  currentOptimization: () => request<OptimizationResult>('/api/optimizations/current'),
   ask: (question: string) =>
     request<AdvisorResponse>('/api/advisor', {
       method: 'POST',

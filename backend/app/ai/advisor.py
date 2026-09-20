@@ -22,6 +22,8 @@ def build_context(
     """Whitelist of computed values the model is allowed to talk about."""
     context: dict = {
         "dataset_label": assessment.dataset_label,
+        "assessment_id": assessment.assessment_id,
+        "model_version": assessment.model_version,
         "totals": {
             "total_modeled_annual_exposure_inr": round(assessment.total_eal_inr, 2),
             "findings_count": assessment.findings_count,

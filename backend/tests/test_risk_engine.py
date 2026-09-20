@@ -173,6 +173,14 @@ def test_portfolio_skips_orphan_findings(assets, findings):
     assert "FND-ORPHAN" not in {r.finding_id for r in assessment.results}
 
 
+def test_portfolio_excludes_non_open_findings(assets, findings):
+    closed = findings[0].model_copy(update={"status": "mitigated"})
+    candidate_findings = [closed, *findings[1:]]
+    assessment = assess_portfolio(assets, candidate_findings)
+    assert closed.finding_id not in {r.finding_id for r in assessment.results}
+    assert assessment.findings_count == len(findings) - 1
+
+
 def test_engine_is_deterministic(assets, findings):
     a = assess_portfolio(assets, findings)
     b = assess_portfolio(assets, findings)

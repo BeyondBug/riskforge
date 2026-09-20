@@ -52,6 +52,9 @@ def test_optimize_respects_budget(client):
     body = resp.json()
     assert body["total_cost_inr"] <= 150000
     assert body["eal_after_inr"] < body["eal_before_inr"]
+    current = client.get("/api/optimizations/current")
+    assert current.status_code == 200
+    assert current.json()["assessment_id"] == body["assessment_id"]
 
 
 def test_optimize_rejects_bad_budget(client):
@@ -96,3 +99,16 @@ def test_report_download_rejects_traversal(client):
 
 def test_unknown_assessment_is_404(client):
     assert client.get("/api/assessments/does-not-exist").status_code == 404
+
+
+def test_optimize_rejects_unknown_assessment(client):
+    response = client.post(
+        "/api/optimize",
+        json={"budget_inr": 100_000, "assessment_id": "does-not-exist"},
+    )
+    assert response.status_code == 404
+
+
+def test_dependency_health_hides_internal_errors(client):
+    body = client.get("/api/health/deps").json()
+    assert "error" not in str(body)

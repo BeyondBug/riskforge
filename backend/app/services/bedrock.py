@@ -91,9 +91,12 @@ class BedrockService:
     def _connect(self) -> None:
         try:
             import boto3
+            from botocore.config import Config
 
             self._client = boto3.client(
-                "bedrock-runtime", region_name=self.settings.aws_region
+                "bedrock-runtime",
+                region_name=self.settings.aws_region,
+                config=Config(connect_timeout=1, read_timeout=10, retries={"max_attempts": 1}),
             )
             self.mode = "bedrock"
             logger.info("Bedrock client ready (%s)", self.settings.bedrock_model_id)

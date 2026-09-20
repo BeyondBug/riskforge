@@ -9,6 +9,10 @@ selection problem over remediation options. Nothing is learned or sampled: the
 same inputs always produce the same output, which is what lets a CFO argue with
 the number instead of accepting it.
 
+The current contract is `riskforge-eal-v1`. An assessment includes only findings
+whose status is `open`; mitigated and accepted findings do not contribute to its
+portfolio total.
+
 ## Request path
 
 ```
@@ -48,6 +52,32 @@ repository.
 | `app/services/*` | backend | DynamoDB, S3, Bedrock adapters + fallbacks |
 | `frontend/src` | browser | Rendering only, no risk arithmetic |
 
+## Browser workflow and state
+
+The dashboard performs read-only assessment, finding, and dependency-status
+requests. It does not run the optimizer. A plan exists only after the user
+submits a budget on the optimizer page.
+
+```
+Dashboard (read only)
+    │
+    ▼
+Finding calculation audit
+    │
+    ▼
+POST /api/optimize ──► active explicit plan
+                           ├──► advisor context
+                           └──► executive report
+```
+
+`POST /api/optimize` may include an `assessment_id`. The API rejects an ID that
+does not match the current assessment rather than attaching a plan to unrelated
+data. `GET /api/optimizations/current` returns the plan used by the advisor and
+report, or `404` before a plan has been created.
+
+The React routes are loaded on demand. The Recharts dependency is isolated to
+the dashboard bundle, while the other workflows remain small route chunks.
+
 ## The risk model
 
 **Likelihood** is a weighted sum of six normalized drivers. Weights sum to 1.0,
@@ -79,6 +109,10 @@ reputation        = business_value × reputation_factor
 
 `records_exposed` is the number of records expected to be exposed in the
 modeled incident, not the size of the customer base.
+
+The Findings UI exposes this audit trail without performing new risk arithmetic:
+it renders the likelihood terms, six loss components, and final multiplication
+returned by `GET /api/assessments/current`.
 
 ## The optimizer
 
@@ -114,6 +148,11 @@ a template rendered from the same JSON, never a guess.
 The demo therefore survives an AWS outage without ever presenting a fabricated
 number as a real one.
 
+AWS client probes use bounded connection/read timeouts and a single retry. The
+public `/api/health/deps` response reports only modes (for example `dynamodb`,
+`memory`, `s3`, `local`, `bedrock`, or `fallback`) and never returns raw internal
+exceptions. The dashboard translates those modes into user-facing status cards.
+
 ## Security posture
 
 - No credentials in the image or the repository; `.env` is gitignored.
@@ -133,3 +172,27 @@ number as a real one.
   finding would be double-counted.
 - The demo dataset is synthetic. The per-record and reputation factors are
   illustrative planning inputs, not figures from a published breach study.
+- The latest assessment and optimization are process-global demo state. They are
+  not isolated by user or organization and will not be shared across multiple
+  Uvicorn workers.
+- DynamoDB persistence is write-through for demo continuity; this version does
+  not restore the current assessment and plan from DynamoDB after restart.
+- Local report fallback files are temporary and have no production retention
+  guarantee.
+
+## Verification
+
+The supported backend runtime is Python 3.11, matching `backend/Dockerfile`.
+The repository test suite covers normalization boundaries, EAL reconstruction,
+open-finding filtering, optimizer feasibility and solver agreement, API input
+validation, advisor boundaries, report generation, sanitized health responses,
+and assessment-ID validation.
+
+The frontend is checked with strict TypeScript and a Vite production build:
+
+```bash
+cd frontend
+npm ci
+npm run typecheck
+npm run build
+```

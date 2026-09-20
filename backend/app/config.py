@@ -61,3 +61,4 @@ DISCLAIMER = (
     "Not a guarantee of actual losses."
 )
 DATASET_LABEL = "Synthetic Demo Dataset"
+MODEL_VERSION = "riskforge-eal-v1"

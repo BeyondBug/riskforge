@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from app.config import MODEL_VERSION
+
 
 class LikelihoodBreakdown(BaseModel):
     """Each weighted term of LIKELIHOOD, kept so the UI can show the audit trail."""
@@ -59,6 +61,7 @@ class PortfolioAssessment(BaseModel):
     assessment_id: str
     created_at: str
     dataset_label: str = "Synthetic Demo Dataset"
+    model_version: str = MODEL_VERSION
 
     results: list[RiskResult] = Field(default_factory=list)
     total_eal_inr: float = Field(default=0.0, ge=0.0)

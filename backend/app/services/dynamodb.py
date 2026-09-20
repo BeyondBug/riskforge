@@ -52,9 +52,12 @@ class DynamoDBService:
     def _connect(self) -> None:
         try:
             import boto3
+            from botocore.config import Config
 
             self._resource = boto3.resource(
-                "dynamodb", region_name=self.settings.aws_region
+                "dynamodb",
+                region_name=self.settings.aws_region,
+                config=Config(connect_timeout=1, read_timeout=2, retries={"max_attempts": 1}),
             )
             # Cheap liveness probe against one real table.
             self._resource.Table(self.settings.dynamodb_table_assets).load()

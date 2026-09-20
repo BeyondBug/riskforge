@@ -59,14 +59,12 @@ export function Spinner({ label }: { label: string }) {
   )
 }
 
-export function ErrorPanel({ title, detail }: { title: string; detail: string }) {
+export function ErrorPanel({ title, detail, onRetry }: { title: string; detail: string; onRetry?: () => void }) {
   return (
-    <div className="rounded-xl border border-bad/40 bg-bad/10 p-5">
+    <div className="rounded-xl border border-bad/40 bg-bad/10 p-5" role="alert">
       <p className="font-medium text-bad">{title}</p>
       <p className="mt-1 text-sm text-muted">{detail}</p>
-      <p className="mt-3 text-xs text-muted">
-        Check that the API is reachable at <code>/api/health</code>.
-      </p>
+      {onRetry ? <button type="button" onClick={onRetry} className="mt-4 rounded-lg border border-bad/50 px-4 py-2 text-sm text-paper hover:bg-bad/10">Try again</button> : null}
     </div>
   )
 }

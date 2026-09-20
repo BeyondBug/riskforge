@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ErrorPanel, Spinner } from '../components/Severity'
 import {
   api,
@@ -17,6 +18,15 @@ export default function Optimizer() {
   const [result, setResult] = useState<OptimizationResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [assessmentId, setAssessmentId] = useState<string>()
+  const [assetNames, setAssetNames] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    void Promise.all([api.assessment(), api.findings()]).then(([assessment, response]) => {
+      setAssessmentId(assessment.assessment_id)
+      setAssetNames(Object.fromEntries(response.findings.map((finding) => [finding.asset_id, finding.asset_name])))
+    }).catch(() => { /* runOptimize will surface an actionable API error */ })
+  }, [])
 
   function clamp(value: number) {
     if (Number.isNaN(value)) return MIN_BUDGET
@@ -27,7 +37,7 @@ export default function Optimizer() {
     setBusy(true)
     setError(null)
     try {
-      setResult(await api.optimize(budget))
+      setResult(await api.optimize(budget, assessmentId))
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -148,13 +158,20 @@ export default function Optimizer() {
             title={`Funded controls (${result.selected.length})`}
             rows={result.selected}
             empty="No control fits this budget. Raise it to fund the cheapest one."
+            assetNames={assetNames}
           />
           <ControlTable
             title={`Not funded (${result.rejected.length})`}
             rows={result.rejected}
             empty="Everything on the list is funded at this budget."
             dim
+            assetNames={assetNames}
           />
+
+          <div className="flex flex-wrap gap-3" aria-live="polite">
+            <Link to="/advisor" className="rf-btn">Ask advisor about this plan</Link>
+            <Link to="/report" className="rounded-lg border border-accent px-6 py-3 font-semibold text-accent hover:bg-accent/10">Generate executive report</Link>
+          </div>
 
           <p className="text-xs text-muted">{result.disclaimer}</p>
         </>
@@ -207,11 +224,13 @@ function ControlTable({
   rows,
   empty,
   dim = false,
+  assetNames,
 }: {
   title: string
   rows: OptimizationResult['selected']
   empty: string
   dim?: boolean
+  assetNames: Record<string, string>
 }) {
   return (
     <section className="space-y-3">
@@ -229,7 +248,7 @@ function ControlTable({
                 <th className="rf-th text-right">Cost</th>
                 <th className="rf-th text-right">Risk reduced</th>
                 <th className="rf-th">Asset</th>
-                <th className="rf-th text-right">Return</th>
+                <th className="rf-th text-right" title="Modeled rupees of exposure removed per rupee spent">Return</th>
               </tr>
             </thead>
             <tbody>
@@ -240,10 +259,10 @@ function ControlTable({
                   <td className="rf-td tnum text-right text-good">
                     {formatINRShort(row.eal_reduction_inr)}
                     <span className="ml-2 text-xs text-muted">
-                      {(row.eal_reduction_pct * 100).toFixed(0)}%
+                      {(row.eal_reduction_pct * 100).toFixed(0)}% of finding EAL
                     </span>
                   </td>
-                  <td className="rf-td text-muted">{row.asset_id}</td>
+                  <td className="rf-td text-muted">{assetNames[row.asset_id] ?? row.asset_id}</td>
                   <td className="rf-td tnum text-right text-muted">
                     {row.roi.toFixed(1)}×
                   </td>
