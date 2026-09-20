@@ -1,12 +1,53 @@
 # RiskForge
 
-Cyber risk quantification and budget allocation. Answers one question:
+**Turn security findings into rupees, then spend a fixed budget where it removes the most risk.**
+
+| | |
+|---|---|
+| **Live demo** | http://13.233.102.11 |
+| **Demo video** | REPLACE_WITH_YOUTUBE_LINK |
+| **Track** | Ship It - deployed on AWS, `ap-south-1` |
+| **AWS services** | EC2 · DynamoDB · S3 · Bedrock |
+| **Tests** | 50 passing |
+
+Security teams justify budget with CVSS scores. Finance does not buy CVSS — it
+buys expected loss avoided. RiskForge gives both sides one unit: rupees.
+
+On the bundled dataset it models **₹9.70 Cr** of annual exposure across 5 assets.
+Given **₹1,50,000**, it funds 2 of 5 controls for ₹1,40,000 and removes
+**₹5.20 Cr** - 53.6% of total exposure. It drops the control with the *highest*
+percentage reduction, because the same rupees buy more elsewhere. That is a 0/1
+knapsack, not a sorted list.
+
+Every figure above is computed by the engine and reproducible from the inputs
+recorded with the assessment. Nothing is typed in.
+
+## Questions a reviewer will ask
+
+| Question | Answer |
+|---|---|
+| Why no ML model? | There is no labelled breach-loss dataset here, and a model that cannot be validated cannot be defended in a budget meeting. The engine is deterministic by design. |
+| Why not just sort findings by CVSS? | At ₹1.5L the optimizer drops **Fix SQLi** - the highest percentage reduction on the list — because two other controls remove more exposure for the same money. A sort cannot do that. |
+| Where can the AI invent a number? | Nowhere. It receives already-computed values only, never the raw drivers or formulas. `GET /api/advisor/context` returns exactly what it saw. |
+| Are there AWS keys anywhere? | No. The EC2 instance role supplies credentials. Presigned report URLs carry an `ASIA` credential prefix - temporary STS, not a static key. |
+| What happens when an AWS service is unavailable? | Every dependency has a labelled fallback, and the Dashboard shows which mode each one is in. The figures are identical either way. |
+| Is the data real? | No. It is a labelled **Synthetic Demo Dataset**. The method is real; the inputs are illustrative and documented as such. |
+
+## Built with AI assistance
+
+Claude (Anthropic) was used for scaffolding, code review, and documentation
+during the event. All architecture and modelling decisions, and the final code,
+are the team's.
+
+---
+
+Answers one question:
 
 > I have a fixed security budget. What should I fix first?
 
 RiskForge converts security findings into modeled rupee exposure, then solves a
 budget-constrained selection problem over remediation options. The model is
-deterministic — the same inputs always produce the same output — so every
+deterministic - the same inputs always produce the same output - so every
 figure on screen can be traced back to an input and a formula.
 
 The current calculation contract is versioned as `riskforge-eal-v1`. Portfolio
@@ -52,21 +93,21 @@ Bedrock is unreachable, the fallback is a template rendered from the same JSON.
 
 The UI is arranged as a single decision path:
 
-1. **Dashboard** — review portfolio exposure and the active AWS/fallback modes.
-2. **Findings** — search findings and expand one to audit its likelihood drivers,
+1. **Dashboard** - review portfolio exposure and the active AWS/fallback modes.
+2. **Findings** - search findings and expand one to audit its likelihood drivers,
    loss components, and final EAL equation.
-3. **Optimizer** — choose a budget and explicitly create a funding plan. Merely
+3. **Optimizer** - choose a budget and explicitly create a funding plan. Merely
    opening the dashboard never creates or changes a plan.
-4. **Advisor** — ask Bedrock, or the deterministic fallback, to explain the
+4. **Advisor** - ask Bedrock, or the deterministic fallback, to explain the
    computed assessment and active plan.
-5. **Report** — confirm whether a plan is included, then generate the executive
+5. **Report** - confirm whether a plan is included, then generate the executive
    PDF for private S3 or temporary local storage.
 
 ## Stack
 
 FastAPI · Pydantic v2 · PuLP · ReportLab · boto3 · React 18 · TypeScript ·
 Vite · Recharts · Tailwind · Nginx · Docker Compose · EC2 · DynamoDB · S3 ·
-Bedrock — `ap-south-1`.
+Bedrock - `ap-south-1`.
 
 ## Run it locally
 
