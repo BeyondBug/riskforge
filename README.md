@@ -9,6 +9,10 @@ budget-constrained selection problem over remediation options. The model is
 deterministic — the same inputs always produce the same output — so every
 figure on screen can be traced back to an input and a formula.
 
+The current calculation contract is versioned as `riskforge-eal-v1`. Portfolio
+totals include unresolved (`open`) findings only; mitigated and accepted source
+records are retained but excluded from active exposure.
+
 **Modeled estimates based on supplied inputs. Not a guarantee of actual losses.**
 The bundled dataset is a **Synthetic Demo Dataset**, not real organisational data.
 
@@ -43,6 +47,20 @@ model receives a whitelist of already-computed values and is instructed that
 every number it mentions must come from that payload. `GET /api/advisor/context`
 returns the exact payload so any claim can be checked against its source. If
 Bedrock is unreachable, the fallback is a template rendered from the same JSON.
+
+## Demo workflow
+
+The UI is arranged as a single decision path:
+
+1. **Dashboard** — review portfolio exposure and the active AWS/fallback modes.
+2. **Findings** — search findings and expand one to audit its likelihood drivers,
+   loss components, and final EAL equation.
+3. **Optimizer** — choose a budget and explicitly create a funding plan. Merely
+   opening the dashboard never creates or changes a plan.
+4. **Advisor** — ask Bedrock, or the deterministic fallback, to explain the
+   computed assessment and active plan.
+5. **Report** — confirm whether a plan is included, then generate the executive
+   PDF for private S3 or temporary local storage.
 
 ## Stack
 
@@ -83,6 +101,14 @@ npm run dev
 
 Vite proxies `/api` to `http://localhost:8000`.
 
+Use the locked dependency graph and verify a production bundle before pushing:
+
+```powershell
+npm ci
+npm run typecheck
+npm run build
+```
+
 ### Full stack with Docker
 
 ```powershell
@@ -113,11 +139,11 @@ image.
 | GET | `/api/health` | Liveness |
 | GET | `/api/health/deps` | Which AWS services are live vs. on a fallback |
 | GET | `/api/assets` | Asset inventory |
-| GET | `/api/findings` | Findings with computed EAL |
+| GET | `/api/findings` | Open findings with computed EAL |
 | POST | `/api/assessments` | Re-score the portfolio |
 | GET | `/api/assessments/current` | Latest assessment |
 | GET | `/api/controls` | Candidate controls with rupee reductions |
-| POST | `/api/optimize` | Budget allocation |
+| POST | `/api/optimize` | Create a budget allocation for the current assessment |
 | GET | `/api/optimizations/current` | Explicitly created plan used by advisor and report |
 | POST | `/api/advisor` | Ask the explanation model |
 | GET | `/api/advisor/context` | Exactly what the model was given |
@@ -131,6 +157,8 @@ image.
 - Both containers run as non-root.
 - Nginx rate-limits 10 r/s per IP.
 - Pydantic validates every request body; production returns generic 500s.
+- Public dependency status exposes service modes but not internal error strings.
+- AWS connection probes use short timeouts so local fallback is reached quickly.
 
 ## Limitations
 
@@ -140,6 +168,12 @@ independent. The demo dataset's per-record and reputation factors are
 illustrative planning inputs, not figures from a published breach study, and
 the CVE severity scores shipped with it are demo values that should be
 re-verified against NVD before any real use.
+
+The current demo keeps the latest assessment and explicitly created optimization
+in process memory. It is designed for a single judging flow, not concurrent
+multi-user or multi-worker production use. DynamoDB receives assessment and
+recommendation writes, but the request path continues from the in-memory copy
+so an AWS outage cannot break the demo.
 
 ## Licence
 

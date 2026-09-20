@@ -29,6 +29,10 @@ The workload is a five-row dataset exercised by a handful of demo sessions:
   whole event is a few tens of thousands of tokens total.
 - **EC2** dominates: it bills per hour whether or not anyone is using it.
 
+The dashboard's dependency-status cards only read service state. They do not run
+the optimizer or invoke Bedrock. Bedrock cost begins when a user submits an
+advisor question; S3 write cost begins when a user generates a report.
+
 **Cost control that matters most:** stop or terminate the EC2 instance when the
 demo window closes. That single action removes the only charge that accrues
 continuously.
